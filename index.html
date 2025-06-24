@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Data Analysis & Charting</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- SheetJS (XLSX) for Excel File Parsing -->
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <!-- Chart.js for 2D Charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js Data Labels Plugin for displaying values on bars/points -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+        }
+        /* Custom scrollbar for data table */
+        .overflow-x-auto::-webkit-scrollbar {
+            height: 8px;
+        }
+        .overflow-x-auto::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1; /* Gray-300 */
+            border-radius: 4px;
+        }
+        .overflow-x-auto::-webkit-scrollbar-track {
+            background-color: #e2e8f0; /* Gray-200 */
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- Login/Registration Container -->
+    <div id="auth-container" class="w-full max-w-md bg-white rounded-xl shadow-lg p-8 transform transition-all duration-300">
+        <h2 class="text-3xl font-bold text-center text-gray-800 mb-6">Welcome!</h2>
+
+        <!-- Login Form -->
+        <div id="login-form">
+            <h3 class="text-xl font-semibold text-gray-700 mb-4">Login</h3>
+            <div class="mb-4">
+                <label for="login-email" class="block text-gray-700 text-sm font-medium mb-2">Email:</label>
+                <input type="email" id="login-email" class="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200" value="user@example.com">
+            </div>
+            <div class="mb-6">
+                <label for="login-password" class="block text-gray-700 text-sm font-medium mb-2">Password:</label>
+                <input type="password" id="login-password" class="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200" value="password123">
+            </div>
+            <button id="login-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-200 transform hover:scale-105">Login</button>
+            <p class="text-center text-gray-600 text-sm mt-4">Don't have an account? <a href="#" id="show-register" class="text-blue-600 hover:text-blue-800 font-medium">Register here</a></p>
+        </div>
+
+        <!-- Register Form (Hidden by default) -->
+        <div id="register-form" class="hidden">
+            <h3 class="text-xl font-semibold text-gray-700 mb-4">Register</h3>
+            <div class="mb-4">
+                <label for="register-email" class="block text-gray-700 text-sm font-medium mb-2">Email:</label>
+                <input type="email" id="register-email" class="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+            </div>
+            <div class="mb-4">
+                <label for="register-password" class="block text-gray-700 text-sm font-medium mb-2">Password:</label>
+                <input type="password" id="register-password" class="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+            </div>
+            <div class="mb-6">
+                <label for="register-confirm-password" class="block text-gray-700 text-sm font-medium mb-2">Confirm Password:</label>
+                <input type="password" id="register-confirm-password" class="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+            </div>
+            <button id="register-button" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75 transition duration-200 transform hover:scale-105">Register</button>
+            <p class="text-center text-gray-600 text-sm mt-4">Already have an account? <a href="#" id="show-login" class="text-blue-600 hover:text-blue-800 font-medium">Login here</a></p>
+        </div>
+
+        <!-- Message Box for Auth -->
+        <div id="auth-message-box" class="mt-4 p-3 hidden rounded-lg text-center" role="alert"></div>
+    </div>
+
+    <!-- Main Application Container (Hidden by default) -->
+    <div id="app-container" class="hidden w-full max-w-7xl flex flex-col bg-white rounded-xl shadow-lg mt-8 transform transition-all duration-300">
+        <!-- New Navbar/Header -->
+        <header class="w-full bg-blue-700 text-white py-4 px-6 rounded-t-xl shadow-md flex items-center justify-between flex-shrink-0">
+            <div class="flex items-center">
+                <i class="fas fa-file-excel text-green-300 text-3xl mr-3"></i>
+                <h1 class="text-2xl font-bold">Excel Analysis Platform</h1>
+            </div>
+            <!-- Placeholder for user email, etc. -->
+            <span id="logged-in-user" class="text-sm"></span>
+        </header>
+
+        <!-- Content area: Sidebar + Main Content -->
+        <div class="flex flex-col md:flex-row flex-grow p-6 gap-6">
+            <!-- Sidebar Navigation -->
+            <nav class="md:w-1/4 lg:w-1/5 bg-gray-50 p-4 rounded-lg shadow-md flex-shrink-0">
+                <h3 class="text-xl font-bold text-gray-800 mb-6">Dashboard</h3>
+                <ul class="space-y-3">
+                    <li>
+                        <a href="#" id="nav-upload" class="flex items-center p-3 text-gray-700 hover:bg-blue-100 hover:text-blue-700 rounded-lg transition duration-200 ease-in-out font-medium current-section" data-section="upload-section">
+                            <i class="fas fa-upload mr-3 text-lg"></i> Upload & Analyze
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" id="nav-history" class="flex items-center p-3 text-gray-700 hover:bg-blue-100 hover:text-blue-700 rounded-lg transition duration-200 ease-in-out font-medium" data-section="history-section">
+                            <i class="fas fa-history mr-3 text-lg"></i> Upload History
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" id="nav-admin" class="flex items-center p-3 text-gray-700 hover:bg-blue-100 hover:text-blue-700 rounded-lg transition duration-200 ease-in-out font-medium" data-section="admin-section">
+                            <i class="fas fa-user-shield mr-3 text-lg"></i> Admin Panel
+                        </a>
+                    </li>
+                     <li>
+                        <a href="#" id="nav-insights" class="flex items-center p-3 text-gray-700 hover:bg-blue-100 hover:text-blue-700 rounded-lg transition duration-200 ease-in-out font-medium" data-section="insights-section">
+                            <i class="fas fa-lightbulb mr-3 text-lg"></i> AI Insights
+                        </a>
+                    </li>
+                    <li>
+                        <button id="logout-button" class="w-full flex items-center justify-center p-3 text-red-600 hover:bg-red-100 hover:text-red-800 rounded-lg transition duration-200 ease-in-out font-medium mt-6">
+                            <i class="fas fa-sign-out-alt mr-3 text-lg"></i> Logout
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+
+            <!-- Main Content Area -->
+            <main class="md:w-3/4 lg:w-4/5 p-4 space-y-6">
+
+                <!-- Upload Section -->
+                <section id="upload-section" class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-5">Upload Excel File</h3>
+                    <div class="flex flex-col sm:flex-row items-center gap-4">
+                        <input type="file" id="excel-file-input" accept=".xls,.xlsx" class="block w-full text-sm text-gray-500
+                            file:mr-4 file:py-2 file:px-4
+                            file:rounded-full file:border-0
+                            file:text-sm file:font-semibold
+                            file:bg-blue-50 file:text-blue-700
+                            hover:file:bg-blue-100 file:cursor-pointer transition duration-200 ease-in-out">
+                        <button id="upload-button" class="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-full transition duration-200 ease-in-out transform hover:scale-105">
+                            <i class="fas fa-cloud-upload-alt mr-2"></i> Upload
+                        </button>
+                    </div>
+                    <div id="loading-indicator" class="mt-4 text-center text-blue-500 hidden">
+                        <i class="fas fa-spinner fa-spin mr-2"></i> Processing file...
+                    </div>
+                     <!-- Message Box for Upload -->
+                    <div id="upload-message-box" class="mt-4 p-3 hidden rounded-lg text-center" role="alert"></div>
+                </section>
+
+                <!-- Data Preview Section -->
+                <section id="data-preview-section" class="bg-white p-6 rounded-xl shadow-md hidden">
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-5">Data Preview</h3>
+                    <div class="overflow-x-auto rounded-lg border border-gray-200">
+                        <table id="data-table" class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <!-- Headers will be populated by JS -->
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <!-- Data rows will be populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Chart Customization and Display Section -->
+                <section id="chart-section" class="bg-white p-6 rounded-xl shadow-md hidden">
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-5">Generate Chart</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div>
+                            <label for="chart-type" class="block text-gray-700 text-sm font-medium mb-2">Chart Type:</label>
+                            <select id="chart-type" class="block w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-200 ease-in-out">
+                                <option value="bar">Bar Chart</option>
+                                <option value="line">Line Chart</option>
+                                <option value="scatter">Scatter Plot</option>
+                                <option value="pie">Pie Chart</option>
+                                <option value="doughnut">Doughnut Chart</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="x-axis-select" class="block text-gray-700 text-sm font-medium mb-2">X-Axis (Labels):</label>
+                            <select id="x-axis-select" class="block w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-200 ease-in-out"></select>
+                        </div>
+                        <div>
+                            <label for="y-axis-select" class="block text-gray-700 text-sm font-medium mb-2">Y-Axis (Values):</label>
+                            <select id="y-axis-select" class="block w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-200 ease-in-out"></select>
+                        </div>
+                    </div>
+                    <button id="generate-chart-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-200 transform hover:scale-105">
+                        <i class="fas fa-chart-bar mr-2"></i> Generate Chart
+                    </button>
+
+                    <div class="mt-8 relative h-96">
+                        <canvas id="myChart" class="w-full h-full"></canvas>
+                    </div>
+                    <button id="download-chart-button" class="mt-6 w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-75 transition duration-200 transform hover:scale-105">
+                        <i class="fas fa-download mr-2"></i> Download Chart
+                    </button>
+                </section>
+
+                <!-- Upload History Section -->
+                <section id="history-section" class="bg-white p-6 rounded-xl shadow-md hidden">
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-5">Upload History</h3>
+                    <ul id="history-list" class="space-y-4">
+                        <!-- History items will be populated by JS -->
+                        <li class="p-4 bg-gray-50 rounded-lg shadow-sm flex items-center justify-between">
+                            <span class="text-gray-700 font-medium"><i class="fas fa-file-excel mr-2 text-green-600"></i>Sales_Q1_2023.xlsx</span>
+                            <span class="text-gray-500 text-sm">Uploaded: 2023-01-15 10:30 AM</span>
+                        </li>
+                        <li class="p-4 bg-gray-50 rounded-lg shadow-sm flex items-center justify-between">
+                            <span class="text-gray-700 font-medium"><i class="fas fa-file-excel mr-2 text-green-600"></i>Marketing_Campaign_Data.xlsx</span>
+                            <span class="text-gray-500 text-sm">Uploaded: 2023-02-20 02:45 PM</span>
+                        </li>
+                    </ul>
+                </section>
+
+                <!-- Admin Panel Section -->
+                <section id="admin-section" class="bg-white p-6 rounded-xl shadow-md hidden">
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-5">Admin Panel</h3>
+                    <p class="text-gray-600">This section is for user management. In a real MERN application, an admin would be able to view, add, edit, and delete users here.</p>
+                    <div class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <h4 class="font-semibold text-blue-800 mb-2">User List (Mock)</h4>
+                        <ul class="list-disc list-inside text-gray-700 space-y-1">
+                            <li>John Doe (Admin)</li>
+                            <li>Jane Smith (User)</li>
+                            <li>Robert Johnson (User)</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- AI Insights Section -->
+                <section id="insights-section" class="bg-white p-6 rounded-xl shadow-md hidden">
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-5">AI-Generated Insights</h3>
+                    <p class="text-gray-600">This section would display AI-generated insights based on the uploaded data. In a real MERN application, this would involve sending processed data to an AI model (e.g., via Gemini API) and displaying the textual or summarized insights here.</p>
+                    <div class="mt-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                        <h4 class="font-semibold text-purple-800 mb-2">Example Insights (Mock)</h4>
+                        <p class="text-gray-700">"Analysis suggests a 15% increase in Q2 sales for product 'A' primarily driven by social media campaigns."</p>
+                        <p class="text-gray-700 mt-2">"Customer churn rate appears higher in region 'X'; consider targeted retention strategies."</p>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // --- Global Variables ---
+        let uploadedData = null; // Stores parsed Excel data
+        let currentChart = null; // Stores the Chart.js instance
+        const history = []; // Stores upload history (client-side mock)
+
+        // --- DOM Elements ---
+        const authContainer = document.getElementById('auth-container');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const showRegisterButton = document.getElementById('show-register');
+        const showLoginButton = document.getElementById('show-login');
+        const loginButton = document.getElementById('login-button');
+        const registerButton = document.getElementById('register-button');
+        const authMessageBox = document.getElementById('auth-message-box');
+        const appContainer = document.getElementById('app-container');
+        const loggedInUserSpan = document.getElementById('logged-in-user'); // New DOM element for user email
+        const logoutButton = document.getElementById('logout-button');
+
+        const excelFileInput = document.getElementById('excel-file-input');
+        const uploadButton = document.getElementById('upload-button');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const uploadMessageBox = document.getElementById('upload-message-box');
+
+        const dataPreviewSection = document.getElementById('data-preview-section');
+        const dataTable = document.getElementById('data-table');
+
+        const chartSection = document.getElementById('chart-section');
+        const chartTypeSelect = document.getElementById('chart-type');
+        const xAxisSelect = document.getElementById('x-axis-select');
+        const yAxisSelect = document.getElementById('y-axis-select');
+        const generateChartButton = document.getElementById('generate-chart-button');
+        const myChartCanvas = document.getElementById('myChart');
+        const downloadChartButton = document.getElementById('download-chart-button');
+
+        const navUpload = document.getElementById('nav-upload');
+        const navHistory = document.getElementById('nav-history');
+        const navAdmin = document.getElementById('nav-admin');
+        const navInsights = document.getElementById('nav-insights');
+
+        const uploadSection = document.getElementById('upload-section');
+        const historySection = document.getElementById('history-section');
+        const adminSection = document.getElementById('admin-section');
+        const insightsSection = document.getElementById('insights-section');
+        const historyList = document.getElementById('history-list');
+
+        // --- Utility Functions ---
+
+        /**
+         * Displays a message in a designated message box.
+         * @param {HTMLElement} element - The message box element.
+         * @param {string} message - The message text.
+         * @param {string} type - 'success', 'error', or 'info' for styling.
+         */
+        function showMessageBox(element, message, type) {
+            element.textContent = message;
+            element.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700', 'bg-blue-100', 'text-blue-700');
+            if (type === 'error') {
+                element.classList.add('bg-red-100', 'text-red-700');
+            } else if (type === 'success') {
+                element.classList.add('bg-green-100', 'text-green-700');
+            } else { // info
+                element.classList.add('bg-blue-100', 'text-blue-700');
+            }
+            element.classList.remove('hidden');
+        }
+
+        /**
+         * Hides a message box.
+         * @param {HTMLElement} element - The message box element.
+         */
+        function hideMessageBox(element) {
+            element.classList.add('hidden');
+        }
+
+        /**
+         * Switches the active section in the main application.
+         * @param {string} sectionId - The ID of the section to show.
+         */
+        function showSection(sectionId) {
+            // Hide all sections
+            uploadSection.classList.add('hidden');
+            historySection.classList.add('hidden');
+            adminSection.classList.add('hidden');
+            insightsSection.classList.add('hidden');
+
+            // Remove 'current-section' class from all nav items
+            document.querySelectorAll('nav a').forEach(navItem => {
+                navItem.classList.remove('current-section', 'bg-blue-100', 'text-blue-700');
+                navItem.classList.add('hover:bg-blue-100', 'hover:text-blue-700');
+            });
+
+            // Show the requested section
+            document.getElementById(sectionId).classList.remove('hidden');
+
+            // Add 'current-section' class to the active nav item
+            const activeNavItem = document.querySelector(`[data-section="${sectionId}"]`);
+            if (activeNavItem) {
+                activeNavItem.classList.add('current-section', 'bg-blue-100', 'text-blue-700');
+                activeNavItem.classList.remove('hover:bg-blue-100', 'hover:text-blue-700');
+            }
+        }
+
+        // --- Authentication Logic (Client-side Simulation) ---
+        let isAuthenticated = false; // Mock authentication state
+
+        /**
+         * Handles user login (client-side mock).
+         */
+        loginButton.addEventListener('click', () => {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            hideMessageBox(authMessageBox);
+
+            // Simple validation
+            if (!email || !password) {
+                showMessageBox(authMessageBox, 'Please enter both email and password.', 'error');
+                return;
+            }
+
+            // Mock login logic
+            if (email === 'user@example.com' && password === 'password123') {
+                isAuthenticated = true;
+                loggedInUserSpan.textContent = `Logged in as: ${email}`; // Set logged-in user email
+                showMessageBox(authMessageBox, 'Login successful!', 'success');
+                setTimeout(() => {
+                    authContainer.classList.add('hidden');
+                    appContainer.classList.remove('hidden');
+                    showSection('upload-section'); // Show upload section by default after login
+                }, 500); // Small delay for visual feedback
+            } else {
+                showMessageBox(authMessageBox, 'Invalid email or password.', 'error');
+            }
+        });
+
+        /**
+         * Handles user registration (client-side mock).
+         */
+        registerButton.addEventListener('click', () => {
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            const confirmPassword = document.getElementById('register-confirm-password').value;
+
+            hideMessageBox(authMessageBox);
+
+            if (!email || !password || !confirmPassword) {
+                showMessageBox(authMessageBox, 'Please fill in all fields.', 'error');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showMessageBox(authMessageBox, 'Passwords do not match.', 'error');
+                return;
+            }
+
+            // In a real app, this would register the user with a backend.
+            // For now, just simulate success and switch to login.
+            showMessageBox(authMessageBox, 'Registration successful! Please login.', 'success');
+            setTimeout(() => {
+                loginForm.classList.remove('hidden');
+                registerForm.classList.add('hidden');
+                hideMessageBox(authMessageBox); // Clear message after switching form
+            }, 1000);
+        });
+
+        /**
+         * Switches to the registration form.
+         */
+        showRegisterButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            loginForm.classList.add('hidden');
+            registerForm.classList.remove('hidden');
+            hideMessageBox(authMessageBox);
+        });
+
+        /**
+         * Switches back to the login form.
+         */
+        showLoginButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            loginForm.classList.remove('hidden');
+            registerForm.classList.add('hidden');
+            hideMessageBox(authMessageBox);
+        });
+
+        /**
+         * Handles user logout.
+         */
+        logoutButton.addEventListener('click', () => {
+            isAuthenticated = false;
+            loggedInUserSpan.textContent = ''; // Clear logged-in user email
+            appContainer.classList.add('hidden');
+            authContainer.classList.remove('hidden');
+            document.getElementById('login-email').value = '';
+            document.getElementById('login-password').value = '';
+            showMessageBox(authMessageBox, 'You have been logged out.', 'info');
+        });
+
+        // --- File Upload and Parsing Logic ---
+
+        /**
+         * Reads and parses an Excel file using SheetJS.
+         * @param {File} file - The Excel file to read.
+         * @returns {Promise<Array<Object>>} - A promise that resolves with the parsed data (array of objects).
+         */
+        async function readXLSXFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        // Assuming the first sheet contains the data
+                        const sheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[sheetName];
+                        // Convert sheet to JSON array of objects
+                        const json = XLSX.utils.sheet_to_json(worksheet);
+                        resolve(json);
+                    } catch (error) {
+                        reject(new Error('Error parsing Excel file: ' + error.message));
+                    }
+                };
+                reader.onerror = (error) => {
+                    reject(new Error('Error reading file: ' + error.message));
+                };
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        /**
+         * Displays the parsed data in the HTML table.
+         * @param {Array<Object>} data - The array of objects representing Excel rows.
+         */
+        function renderDataTable(data) {
+            const thead = dataTable.querySelector('thead tr');
+            const tbody = dataTable.querySelector('tbody');
+
+            // Clear previous table content
+            thead.innerHTML = '';
+            tbody.innerHTML = '';
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="100%" class="text-center py-4 text-gray-500">No data available.</td></tr>';
+                return;
+            }
+
+            // Create table headers from the first row's keys
+            const headers = Object.keys(data[0]);
+            headers.forEach(header => {
+                const th = document.createElement('th');
+                th.className = 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider';
+                th.textContent = header;
+                thead.appendChild(th);
+            });
+
+            // Populate table body with data
+            data.slice(0, 50).forEach(row => { // Show first 50 rows as preview
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-100';
+                headers.forEach(header => {
+                    const td = document.createElement('td');
+                    td.className = 'px-6 py-4 whitespace-nowrap text-sm text-gray-800';
+                    td.textContent = row[header] !== undefined ? row[header] : ''; // Handle undefined values
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+
+            dataPreviewSection.classList.remove('hidden');
+        }
+
+        /**
+         * Populates the X and Y axis select dropdowns with column headers.
+         * @param {Array<Object>} data - The parsed Excel data.
+         */
+        function populateAxisSelectors(data) {
+            xAxisSelect.innerHTML = '';
+            yAxisSelect.innerHTML = '';
+
+            if (data.length === 0) {
+                const option = document.createElement('option');
+                option.textContent = 'No columns available';
+                option.value = '';
+                xAxisSelect.appendChild(option.cloneNode(true));
+                yAxisSelect.appendChild(option.cloneNode(true));
+                return;
+            }
+
+            const headers = Object.keys(data[0]);
+            headers.forEach(header => {
+                const optionX = document.createElement('option');
+                optionX.value = header;
+                optionX.textContent = header;
+                xAxisSelect.appendChild(optionX);
+
+                const optionY = document.createElement('option');
+                optionY.value = header;
+                optionY.textContent = header;
+                yAxisSelect.appendChild(optionY);
+            });
+
+            chartSection.classList.remove('hidden');
+        }
+
+        /**
+         * Event listener for the Upload button.
+         */
+        uploadButton.addEventListener('click', async () => {
+            const file = excelFileInput.files[0];
+            hideMessageBox(uploadMessageBox);
+            if (!file) {
+                showMessageBox(uploadMessageBox, 'Please select an Excel file to upload.', 'error');
+                return;
+            }
+
+            loadingIndicator.classList.remove('hidden'); // Show loading indicator
+            uploadedData = null; // Clear previous data
+            dataPreviewSection.classList.add('hidden'); // Hide sections
+            chartSection.classList.add('hidden');
+
+            try {
+                const data = await readXLSXFile(file);
+                uploadedData = data; // Store data globally
+                renderDataTable(data);
+                populateAxisSelectors(data);
+                showMessageBox(uploadMessageBox, `File "${file.name}" uploaded and parsed successfully!`, 'success');
+
+                // Add to history (client-side mock)
+                history.push({
+                    fileName: file.name,
+                    timestamp: new Date().toLocaleString()
+                });
+                renderHistory(); // Update history display
+
+            } catch (error) {
+                showMessageBox(uploadMessageBox, error.message, 'error');
+                console.error(error);
+            } finally {
+                loadingIndicator.classList.add('hidden'); // Hide loading indicator
+            }
+        });
+
+        // --- Chart Generation Logic ---
+
+        /**
+         * Generates and displays a chart using Chart.js based on user selections.
+         */
+        generateChartButton.addEventListener('click', () => {
+            if (!uploadedData || uploadedData.length === 0) {
+                showMessageBox(uploadMessageBox, 'No data uploaded yet. Please upload an Excel file first.', 'error');
+                return;
+            }
+
+            const chartType = chartTypeSelect.value;
+            const xAxisColumn = xAxisSelect.value;
+            const yAxisColumn = yAxisSelect.value;
+
+            if (!xAxisColumn || !yAxisColumn) {
+                showMessageBox(uploadMessageBox, 'Please select both X-Axis and Y-Axis columns.', 'error');
+                return;
+            }
+
+            // Extract labels and data for the chart
+            const labels = uploadedData.map(row => row[xAxisColumn]);
+            // Attempt to parse Y-axis values as numbers
+            const dataValues = uploadedData.map(row => {
+                const value = row[yAxisColumn];
+                return typeof value === 'string' ? parseFloat(value) : value;
+            }).filter(value => !isNaN(value)); // Filter out NaN values
+
+            // If Y-axis values are not numeric for bar/line/scatter, warn and return
+            if (['bar', 'line', 'scatter'].includes(chartType) && dataValues.length !== labels.length) {
+                showMessageBox(uploadMessageBox, `Y-Axis column '${yAxisColumn}' contains non-numeric data unsuitable for ${chartType} chart. Please select a numeric column.`, 'error');
+                return;
+            }
+
+            // Destroy existing chart if it exists
+            if (currentChart) {
+                currentChart.destroy();
+            }
+
+            const ctx = myChartCanvas.getContext('2d');
+            const datasets = [];
+
+            // Special handling for Pie/Doughnut charts
+            if (chartType === 'pie' || chartType === 'doughnut') {
+                // For pie/doughnut, X-axis becomes labels, Y-axis becomes values
+                datasets.push({
+                    label: yAxisColumn,
+                    data: dataValues,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.7)', 'rgba(54, 162, 235, 0.7)', 'rgba(255, 206, 86, 0.7)',
+                        'rgba(75, 192, 192, 0.7)', 'rgba(153, 102, 255, 0.7)', 'rgba(255, 159, 64, 0.7)',
+                        'rgba(199, 199, 199, 0.7)', 'rgba(83, 102, 255, 0.7)', 'rgba(40, 159, 64, 0.7)',
+                        'rgba(210, 50, 50, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)', 'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)', 'rgba(153, 102, 255, 1)', 'rgba(255, 159, 64, 1)',
+                        'rgba(199, 199, 199, 1)', 'rgba(83, 102, 255, 1)', 'rgba(40, 159, 64, 1)',
+                        'rgba(210, 50, 50, 1)'
+                    ],
+                    borderWidth: 1
+                });
+            } else {
+                datasets.push({
+                    label: yAxisColumn,
+                    data: dataValues,
+                    backgroundColor: chartType === 'bar' ? 'rgba(75, 192, 192, 0.6)' : 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1,
+                    fill: chartType === 'line' ? true : false,
+                    tension: chartType === 'line' ? 0.4 : 0, // Smooth lines for line chart
+                    pointBackgroundColor: chartType === 'scatter' ? 'rgba(255, 99, 132, 0.8)' : 'rgba(75, 192, 192, 1)',
+                    pointBorderColor: '#fff',
+                    pointRadius: chartType === 'scatter' ? 5 : 3,
+                    pointHoverRadius: chartType === 'scatter' ? 7 : 5,
+                });
+            }
+
+            // Chart.js configuration
+            currentChart = new Chart(ctx, {
+                type: chartType,
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false, // Allows canvas to fill parent container
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    family: 'Inter',
+                                    size: 14
+                                }
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: `Chart of ${yAxisColumn} by ${xAxisColumn}`,
+                            font: {
+                                family: 'Inter',
+                                size: 18,
+                                weight: 'bold'
+                            },
+                            color: '#333'
+                        },
+                        datalabels: { // Use datalabels plugin
+                            display: function(context) {
+                                return chartType !== 'scatter' && chartType !== 'line'; // Hide for scatter and line for clarity by default
+                            },
+                            align: 'end',
+                            anchor: 'end',
+                            color: '#333',
+                            font: {
+                                weight: 'bold'
+                            },
+                            formatter: function(value) {
+                                return value; // Display the raw value
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: chartType !== 'pie' && chartType !== 'doughnut',
+                            title: {
+                                display: true,
+                                text: xAxisColumn,
+                                font: {
+                                    family: 'Inter',
+                                    size: 16,
+                                    weight: 'bold'
+                                }
+                            },
+                            ticks: {
+                                font: {
+                                    family: 'Inter'
+                                }
+                            }
+                        },
+                        y: {
+                            display: chartType !== 'pie' && chartType !== 'doughnut',
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: yAxisColumn,
+                                font: {
+                                    family: 'Inter',
+                                    size: 16,
+                                    weight: 'bold'
+                                }
+                            },
+                            ticks: {
+                                font: {
+                                    family: 'Inter'
+                                }
+                            }
+                        }
+                    },
+                    // Add animations for smoother transitions
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeInOutQuart'
+                    }
+                },
+                 plugins: [ChartDataLabels] // Register the plugin
+            });
+            hideMessageBox(uploadMessageBox); // Clear any previous upload messages
+        });
+
+        /**
+         * Downloads the generated chart as a PNG image.
+         */
+        downloadChartButton.addEventListener('click', () => {
+            if (currentChart) {
+                const link = document.createElement('a');
+                link.download = 'chart.png';
+                link.href = myChartCanvas.toDataURL('image/png', 1.0); // Get data URL of the canvas
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                showMessageBox(uploadMessageBox, 'No chart to download. Please generate a chart first.', 'error');
+            }
+        });
+
+        // --- History Section Logic ---
+
+        /**
+         * Renders the upload history list.
+         */
+        function renderHistory() {
+            historyList.innerHTML = ''; // Clear existing list
+
+            if (history.length === 0) {
+                historyList.innerHTML = '<li class="text-gray-500 py-4 text-center">No upload history yet.</li>';
+                return;
+            }
+
+            history.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'p-4 bg-gray-50 rounded-lg shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between';
+                li.innerHTML = `
+                    <span class="text-gray-700 font-medium mb-1 sm:mb-0"><i class="fas fa-file-excel mr-2 text-green-600"></i>${item.fileName}</span>
+                    <span class="text-gray-500 text-sm">Uploaded: ${item.timestamp}</span>
+                `;
+                historyList.appendChild(li);
+            });
+        }
+
+        // --- Navigation Logic ---
+        navUpload.addEventListener('click', (e) => { e.preventDefault(); showSection('upload-section'); });
+        navHistory.addEventListener('click', (e) => { e.preventDefault(); showSection('history-section'); renderHistory(); }); // Re-render history when navigating
+        navAdmin.addEventListener('click', (e) => { e.preventDefault(); showSection('admin-section'); });
+        navInsights.addEventListener('click', (e) => { e.preventDefault(); showSection('insights-section'); });
+
+
+        // Initial setup on page load: Show login form
+        window.addEventListener('load', () => {
+            authContainer.classList.remove('hidden');
+            appContainer.classList.add('hidden');
+            // Mock initial history for demo purposes
+            history.push({ fileName: 'Sample_Data_1.xlsx', timestamp: '2023-01-01 10:00 AM' });
+            history.push({ fileName: 'Sample_Data_2.xlsx', timestamp: '2023-01-02 11:30 AM' });
+        });
+
+        // Ensure Chart.js responsive behavior on window resize
+        window.addEventListener('resize', () => {
+            if (currentChart) {
+                currentChart.resize();
+            }
+        });
+
+    </script>
+</body>
+</html>
