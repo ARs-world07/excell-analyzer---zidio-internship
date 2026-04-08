@@ -18,16 +18,4 @@ A simple web app to upload Excel files, view the data, and generate interactive 
 - SheetJS for Excel parsing
 - Chart.js for data visualization
 
-##  Usage
-
-1. Open `index.html` in your browser
-2. Login with:
-   - Email: `user@example.com`
-   - Password: `password123`
-3. Upload a file → Select chart type → Generate chart
-
-##  Note
-
-This is a frontend-only project. All data is stored in memory and resets on reload.
-
----
+This is frontend only project
